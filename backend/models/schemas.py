@@ -49,3 +49,10 @@ class AnalyzeResponse(BaseModel):
     parsed_resume: ParsedResume
     job_description: JobDescription
     match_result: MatchResult
+    
+class RecruiterFeedback(BaseModel):
+    """LLM-generated recruiter-style feedback comparing a resume against a job description."""
+    overall_impression: str
+    strengths: list[str] = []
+    concerns: list[str] = []
+    verdict: str
