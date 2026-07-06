@@ -56,3 +56,14 @@ class RecruiterFeedback(BaseModel):
     strengths: list[str] = []
     concerns: list[str] = []
     verdict: str
+    
+class InterviewQuestion(BaseModel):
+    """A single interview question generated based on a resume/job description match."""
+    question: str
+    category: str
+    reason: str
+
+
+class InterviewQuestionSet(BaseModel):
+    """A set of LLM-generated interview questions for a candidate/role pairing."""
+    questions: list[InterviewQuestion] = []
