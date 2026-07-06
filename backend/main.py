@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 
+from backend.api.routes import router
 from backend.config import configure_logging, load_project_env
 
 configure_logging()
 load_project_env()
 
 app = FastAPI(title="ResumeRadar", version="2.0.0")
+app.include_router(router)
 
 
 @app.get("/api/health")
