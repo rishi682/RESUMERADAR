@@ -1,0 +1,8 @@
+{
+  "skills": [
+    "FastAPI", "LangChain", "LangGraph", "LlamaIndex", "ChromaDB",
+    "Pinecone", "Weaviate", "FAISS", "Qdrant", "RAG",
+    "Hybrid Search", "BM25", "RRF", "Sentence Transformers",
+    "Hugging Face Transformers", "Streamlit", "Gradio"
+  ]
+}
