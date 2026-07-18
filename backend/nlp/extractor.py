@@ -52,9 +52,15 @@ def extract_skills(text: str) -> list[str]:
     annotations = _skill_extractor.annotate(text)
     found = set()
     for match in annotations["results"]["full_matches"]:
-        found.add(match["doc_node_value"])
+        value = match["doc_node_value"].strip()
+        words = value.split()
+        if len(words) <= 4 and len(value) > 2 and value.lower() not in {w.lower() for w in words for _ in [None] if words.count(w) > 1}:
+            found.add(value)
     for match in annotations["results"]["ngram_scored"]:
-        found.add(match["doc_node_value"])
+        value = match["doc_node_value"].strip()
+        words = value.split()
+        if len(words) <= 4 and len(value) > 2 and len(set(words)) == len(words):
+            found.add(value)
 
     text_lower = text.lower()
     for skill in _SUPPLEMENTAL_SKILLS:
@@ -109,12 +115,60 @@ def extract_education(text: str) -> list[EducationEntry]:
 
 
 def extract_experience(text: str) -> list[ExperienceEntry]:
-    """Return experience entries parsed from the experience section, if present. Returns an empty list if no experience section exists (e.g. student resumes with only a Projects section)."""
+    """Return experience entries parsed from the experience section, if present."""
     sections = _split_sections(text)
     experience_text = sections.get("experience", "")
     if not experience_text:
         return []
-    return []
+
+    entries = []
+    lines = [line.strip() for line in experience_text.splitlines() if line.strip()]
+
+    DATE_PATTERN = re.compile(
+        r"(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|"
+        r"June|July|August|September|October|November|December)[\s,]+\d{4}"
+        r"|(\d{4})\s*[-–]\s*(\d{4}|Present|present|Current|current)",
+        re.IGNORECASE,
+    )
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        date_match = DATE_PATTERN.search(line)
+
+        if date_match:
+            # This line has a date — treat it as a job header
+            date_str = date_match.group(0)
+            header = line[:date_match.start()].strip(" |•–-")
+
+            # Split "Title at Company" or "Title | Company"
+            split = re.split(r"\s+at\s+|\s*\|\s*|\s*–\s*|\s+-\s+", header, maxsplit=1)
+            title = split[0].strip() if split else header
+            company = split[1].strip() if len(split) > 1 else ""
+
+            # Parse start/end from date string
+            date_parts = re.findall(r"\d{4}|Present|present|Current|current", date_str)
+            start_date = date_parts[0] if date_parts else None
+            end_date = date_parts[1] if len(date_parts) > 1 else None
+
+            # Collect description lines until next date header or end
+            desc_lines = []
+            i += 1
+            while i < len(lines) and not DATE_PATTERN.search(lines[i]):
+                desc_lines.append(lines[i])
+                i += 1
+
+            entries.append(ExperienceEntry(
+                title=title,
+                company=company,
+                start_date=start_date,
+                end_date=end_date,
+                description=" ".join(desc_lines).strip(),
+            ))
+        else:
+            i += 1
+
+    return entries
 
 
 def parse_resume(raw_text: str) -> ParsedResume:

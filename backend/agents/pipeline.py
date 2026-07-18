@@ -58,8 +58,12 @@ def _score_node(state: PipelineState) -> PipelineState:
         doc_ids=candidate_ids,
         n_results=2,
     )
-    resume_score = next((score for doc_id, score in fused if doc_id == "resume"), 0.0)
-    match_score = round(min(resume_score * 1000, 100.0), 2)
+    rrf_scores = {doc_id: score for doc_id, score in fused}
+    max_rrf = max(rrf_scores.values()) if rrf_scores else 1.0
+    resume_rrf = rrf_scores.get("resume", 0.0)
+    semantic_score = round((resume_rrf / max_rrf) * 100, 2) if max_rrf > 0 else 0.0
+
+    match_score = round(0.6 * ats_score_percent + 0.4 * semantic_score, 2)
 
     match_result = MatchResult(
         ats_score_percent=ats_score_percent,
